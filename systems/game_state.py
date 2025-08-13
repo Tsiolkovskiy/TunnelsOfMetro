@@ -635,7 +635,7 @@ class GameStateManager:
         """Check if a station has been discovered"""
         return self.scouting_system.is_station_discovered(station_name)
     
-    def get_visible_stations(self) -> Set[str]:
+    def get_visible_stations(self) -> set[str]:
         """Get all stations visible to the player"""
         return self.scouting_system.get_visible_stations()
     

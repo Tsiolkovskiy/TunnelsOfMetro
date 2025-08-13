@@ -5,7 +5,7 @@ Manages the main game loop and system coordination
 
 import pygame
 import logging
-from typing import Optional
+from typing import Dict, Optional, Any
 
 from core.config import Config
 from systems.metro_map import MetroMap

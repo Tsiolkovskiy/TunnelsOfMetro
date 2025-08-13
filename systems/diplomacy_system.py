@@ -56,7 +56,7 @@ class DiplomaticRelationship:
     relationship_value: int
     
     # Status derived from relationship value
-    status: RelationshipStatus
+    status: RelationshipStatus = None
     
     # Active agreements
     trade_agreement: bool = False

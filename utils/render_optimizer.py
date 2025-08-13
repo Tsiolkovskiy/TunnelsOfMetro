@@ -5,7 +5,7 @@ Optimizes rendering performance through batching, caching, and culling
 
 import pygame
 import logging
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set, Any
 from dataclasses import dataclass
 from enum import Enum
 

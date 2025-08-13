@@ -1,0 +1,59 @@
+{
+  "graphics": {
+    "quality": "medium",
+    "fullscreen": false,
+    "vsync": true,
+    "fps_limit": 60,
+    "resolution_width": 1024,
+    "resolution_height": 768,
+    "ui_scale": 1.0,
+    "show_fps": false,
+    "particle_effects": true,
+    "screen_shake": true
+  },
+  "audio": {
+    "master_volume": 0.8,
+    "music_volume": 0.7,
+    "sfx_volume": 0.8,
+    "ui_volume": 0.6,
+    "quality": "medium",
+    "mute_when_unfocused": true
+  },
+  "gameplay": {
+    "difficulty": "normal",
+    "auto_save_frequency": 5,
+    "auto_save_enabled": true,
+    "pause_on_events": true,
+    "show_tooltips": true,
+    "animation_speed": 1.0,
+    "confirm_destructive_actions": true,
+    "auto_end_turn": false,
+    "show_resource_warnings": true,
+    "tutorial_enabled": true
+  },
+  "controls": {
+    "mouse_sensitivity": 1.0,
+    "scroll_speed": 1.0,
+    "edge_scrolling": true,
+    "invert_zoom": false,
+    "double_click_speed": 500,
+    "key_end_turn": "SPACE",
+    "key_quick_save": "F5",
+    "key_quick_load": "F9",
+    "key_pause": "PAUSE",
+    "key_screenshot": "F12",
+    "key_toggle_hud": "H",
+    "key_toggle_messages": "M",
+    "key_toggle_legend": "L"
+  },
+  "ui": {
+    "hud_opacity": 0.8,
+    "message_duration": 5.0,
+    "show_station_names": true,
+    "show_faction_colors": true,
+    "compact_ui": false,
+    "font_size": 12,
+    "color_blind_mode": false,
+    "high_contrast": false
+  }
+}

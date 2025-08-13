@@ -134,7 +134,7 @@ class MapRenderer:
         state_key = f"TUNNEL_{state.value.upper()}"
         return self.colors.get(state_key, self.colors["TUNNEL_CLEAR"])
     
-    def render_map(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[Set[str]] = None):
+    def render_map(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[set[str]] = None):
         """
         Render the complete Metro map
         
@@ -328,7 +328,7 @@ class MapRenderer:
             
             current_distance += dash_length + gap_length
     
-    def _render_tunnels(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[Set[str]] = None):
+    def _render_tunnels(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[set[str]] = None):
         """Render all tunnel connections"""
         for tunnel in metro_map.tunnels:
             station_a = metro_map.get_station(tunnel.station_a)
@@ -407,7 +407,7 @@ class MapRenderer:
             pygame.draw.line(surface, self.colors["TUNNEL_COLLAPSED"], 
                            (mid_x - 4, mid_y + 4), (mid_x + 4, mid_y - 4), 2)
     
-    def _render_stations(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[Set[str]] = None):
+    def _render_stations(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[set[str]] = None):
         """Render all stations with faction colors and status indicators"""
         for station in metro_map.stations.values():
             # Apply fog of war
@@ -528,7 +528,7 @@ class MapRenderer:
                     2
                 )
     
-    def _render_station_names(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[Set[str]] = None):
+    def _render_station_names(self, surface: pygame.Surface, metro_map: MetroMap, visible_stations: Optional[set[str]] = None):
         """Render station names with text shadows"""
         for station in metro_map.stations.values():
             # Apply fog of war

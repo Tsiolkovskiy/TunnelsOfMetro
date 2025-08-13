@@ -5,7 +5,7 @@ Handles intelligence gathering, fog of war, and station reconnaissance
 
 import logging
 import random
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any
 from enum import Enum
 from dataclasses import dataclass
 
@@ -73,7 +73,7 @@ class ScoutingSystem:
         self.station_intelligence: Dict[str, StationIntelligence] = {}
         
         # Fog of war - stations that have been discovered
-        self.discovered_stations: Set[str] = set()
+        self.discovered_stations: set[str] = set()
         
         # Scouting costs and requirements
         self.scout_costs = {
@@ -335,7 +335,7 @@ class ScoutingSystem:
         """Check if a station has been discovered"""
         return station_name in self.discovered_stations
     
-    def get_visible_stations(self) -> Set[str]:
+    def get_visible_stations(self) -> set[str]:
         """Get all stations visible to the player"""
         return self.discovered_stations.copy()
     
@@ -400,7 +400,7 @@ class ScoutingSystem:
         
         return summary
     
-    def create_fog_of_war_filter(self) -> Set[str]:
+    def create_fog_of_war_filter(self) -> set[str]:
         """Create filter for fog of war rendering"""
         return self.discovered_stations
     

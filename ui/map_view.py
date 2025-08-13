@@ -9,7 +9,7 @@ from typing import Optional, Tuple, List, Dict, Any
 
 from ui.map_renderer import MapRenderer
 from ui.interaction_manager import InteractionManager, InteractionMode
-from ui.action_interface import StationActionInterface
+from ui.station_actions import StationActionInterface
 from systems.metro_map import MetroMap
 from core.config import Config
 

@@ -4,7 +4,7 @@ Manages the Moscow Metro map with stations, tunnels, and pathfinding
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Set, Any
+from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict, deque
 import heapq
 
@@ -32,7 +32,7 @@ class MetroMap:
         self.tunnels: List[Tunnel] = []
         
         # Adjacency graph for pathfinding (station_name -> set of connected stations)
-        self.adjacency: Dict[str, Set[str]] = defaultdict(set)
+        self.adjacency: Dict[str, set[str]] = defaultdict(set)
         
         # Metro line organization
         self.metro_lines: Dict[str, List[str]] = {}  # line_name -> station_names
@@ -410,7 +410,7 @@ class MetroMap:
         
         return issues
     
-    def _dfs_visit(self, station: str, visited: Set[str]):
+    def _dfs_visit(self, station: str, visited: set[str]):
         """Depth-first search helper for connectivity checking"""
         visited.add(station)
         for neighbor in self.adjacency[station]:
