@@ -4,7 +4,7 @@ Manages the overall game state and provides data to UI components
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Set, Tuple
 from dataclasses import dataclass
 
 from data.resources import ResourcePool
@@ -20,8 +20,6 @@ from systems.resource_production_system import ResourceProductionSystem
 from systems.event_system import EventSystem
 from systems.victory_system import VictorySystem, VictoryType
 from systems.ai_system import AISystem
-from systems.save_system import SaveSystem
-from systems.load_system import LoadSystem
 
 
 @dataclass
@@ -74,8 +72,6 @@ class GameStateManager:
         self.event_system = EventSystem(metro_map)
         self.victory_system = VictorySystem(metro_map)
         self.ai_system = AISystem(metro_map)
-        self.save_system = SaveSystem()
-        self.load_system = LoadSystem()
         
         # Connect systems
         self.combat_system.diplomacy_system = self.diplomacy_system
@@ -1213,7 +1209,9 @@ class GameStateManager:
         Returns:
             Result dictionary with success status and message
         """
-        return self.save_system.save_game(self, slot_name, description)
+        from systems.save_system import SaveSystem
+        save_system = SaveSystem()
+        return save_system.save_game(self, slot_name, description)
     
     def load_game(self, slot_name: str) -> Dict[str, Any]:
         """
@@ -1225,16 +1223,24 @@ class GameStateManager:
         Returns:
             Result dictionary with success status and message
         """
-        result = self.save_system.load_game(slot_name)
+        from systems.save_system import SaveSystem
+        from systems.load_system import LoadSystem
+        
+        save_system = SaveSystem()
+        load_system = LoadSystem()
+        
+        result = save_system.load_game(slot_name)
         
         if result["success"]:
             try:
                 # Reconstruct game state from save data
                 save_data = result["save_data"]
-                reconstructed_state = self.load_system.reconstruct_game_state(save_data, self.metro_map)
+                reconstructed_state = load_system.reconstruct_game_state(save_data, self.metro_map)
                 
                 # Validate loaded state
-                validation = self.load_system.validate_loaded_state(reconstructed_state)
+                validation = load_system.validate_loaded_state(reconstructed_state)
+                
+
                 if not validation["valid"]:
                     self.logger.warning(f"Loaded state has issues: {validation['issues']}")
                 
@@ -1293,18 +1299,26 @@ class GameStateManager:
     
     def get_save_slots(self) -> List[Dict[str, Any]]:
         """Get list of available save slots"""
-        return self.save_system.get_save_slots()
+        from systems.save_system import SaveSystem
+        save_system = SaveSystem()
+        return save_system.get_save_slots()
     
     def delete_save(self, slot_name: str) -> Dict[str, Any]:
         """Delete a save slot"""
-        return self.save_system.delete_save(slot_name)
+        from systems.save_system import SaveSystem
+        save_system = SaveSystem()
+        return save_system.delete_save(slot_name)
     
     def create_quick_save(self) -> Dict[str, Any]:
         """Create a quick save with automatic naming"""
-        return self.save_system.create_quick_save(self)
+        from systems.save_system import SaveSystem
+        save_system = SaveSystem()
+        return save_system.create_quick_save(self)
     
     def create_auto_save(self) -> Dict[str, Any]:
         """Create an auto-save for the current turn"""
-        slot_name = self.save_system.get_auto_save_name(self)
+        from systems.save_system import SaveSystem
+        save_system = SaveSystem()
+        slot_name = save_system.get_auto_save_name(self)
         description = f"Auto-save for turn {self.current_turn}"
-        return self.save_system.save_game(self, slot_name, description)
+        return save_system.save_game(self, slot_name, description)

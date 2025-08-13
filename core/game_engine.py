@@ -11,6 +11,8 @@ from core.config import Config
 from systems.metro_map import MetroMap
 from systems.game_state import GameStateManager
 from systems.settings_system import SettingsSystem
+from systems.audio_system import AudioSystem
+from systems.visual_effects import VisualEffectsSystem
 from utils.performance_profiler import get_profiler, ProfileCategory
 from utils.render_optimizer import RenderOptimizer
 from ui.map_view import MapView
@@ -40,7 +42,10 @@ class GameEngine:
         self.event_choice_interface: Optional[EventChoiceInterface] = None
         self.settings_system: Optional[SettingsSystem] = None
         self.render_optimizer: Optional[RenderOptimizer] = None
+        self.audio_system: Optional[AudioSystem] = None
+        self.visual_effects: Optional[VisualEffectsSystem] = None
         self.profiler = get_profiler()
+        self.current_frame = 0
         
         # Initialize display
         self._init_display()
@@ -96,6 +101,19 @@ class GameEngine:
             self.settings_system = SettingsSystem()
             self.logger.info("Settings system initialized")
             
+            # Initialize render optimizer
+            self.render_optimizer = RenderOptimizer(self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT)
+            self.logger.info("Render optimizer initialized")
+            
+            # Initialize audio system
+            self.audio_system = AudioSystem()
+            self.audio_system.create_placeholder_sounds()  # Create test sounds
+            self.logger.info("Audio system initialized")
+            
+            # Initialize visual effects system
+            self.visual_effects = VisualEffectsSystem()
+            self.logger.info("Visual effects system initialized")
+            
             # Add welcome message
             self.message_system.add_message(
                 "Welcome to the Metro. Survive at all costs.",
@@ -114,17 +132,29 @@ class GameEngine:
         self.logger.info("Starting main game loop")
         
         while self.running:
+            # Start frame profiling
+            self.profiler.start_frame()
+            
             # Handle events
-            self._handle_events()
+            with self.profiler.time_operation(ProfileCategory.EVENT_PROCESSING, "handle_events"):
+                self._handle_events()
             
             # Update game state
-            self._update()
+            with self.profiler.time_operation(ProfileCategory.GAME_LOGIC, "update_game_state"):
+                self._update()
             
             # Render frame
-            self._render()
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "render_frame"):
+                self._render()
+            
+            # Performance optimization
+            self._optimize_performance()
             
             # Maintain target FPS
             self.clock.tick(self.config.TARGET_FPS)
+            
+            # Increment frame counter
+            self.current_frame += 1
             
         self.logger.info("Game loop ended")
         
@@ -165,6 +195,12 @@ class GameEngine:
                 elif event.key == pygame.K_s and (pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]):
                     # Ctrl+S for save
                     self._show_save_menu()
+                elif event.key == pygame.K_F3:
+                    # Toggle performance overlay
+                    self._toggle_performance_overlay()
+                elif event.key == pygame.K_F4:
+                    # Log performance report
+                    self._log_performance_report()
                 else:
                     # Handle event choice interface first
                     if self.event_choice_interface and self.event_choice_interface.is_visible():
@@ -208,11 +244,23 @@ class GameEngine:
         
         # Update map view
         if self.map_view:
-            self.map_view.update(dt)
+            with self.profiler.time_operation(ProfileCategory.UI_UPDATE, "map_view_update"):
+                self.map_view.update(dt)
         
         # Update message system
         if self.message_system:
-            self.message_system.update(dt)
+            with self.profiler.time_operation(ProfileCategory.UI_UPDATE, "message_system_update"):
+                self.message_system.update(dt)
+        
+        # Update audio system
+        if self.audio_system:
+            with self.profiler.time_operation(ProfileCategory.SYSTEM_UPDATE, "audio_system_update"):
+                self.audio_system.update(dt)
+        
+        # Update visual effects
+        if self.visual_effects:
+            with self.profiler.time_operation(ProfileCategory.SYSTEM_UPDATE, "visual_effects_update"):
+                self.visual_effects.update(dt)
         
     def _render(self):
         """Render the current frame"""
@@ -221,23 +269,38 @@ class GameEngine:
         
         # Render map view
         if self.map_view:
-            self.map_view.render(self.screen)
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "map_view_render"):
+                self.map_view.render(self.screen)
         
         # Render HUD
         if self.hud and self.game_state:
-            self.hud.render(self.screen, self.game_state.get_game_state())
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "hud_render"):
+                self.hud.render(self.screen, self.game_state.get_game_state())
         
         # Render message system
         if self.message_system:
-            self.message_system.render_event_feed(self.screen)
-            self.message_system.render_status_messages(self.screen)
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "message_system_render"):
+                self.message_system.render_event_feed(self.screen)
+                self.message_system.render_status_messages(self.screen)
         
         # Render UI overlay
-        self._render_ui_overlay()
+        with self.profiler.time_operation(ProfileCategory.RENDERING, "ui_overlay_render"):
+            self._render_ui_overlay()
+        
+        # Render visual effects
+        if self.visual_effects:
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "visual_effects_render"):
+                camera_x = self.map_view.viewport_offset[0] if self.map_view else 0
+                camera_y = self.map_view.viewport_offset[1] if self.map_view else 0
+                self.visual_effects.render(self.screen, camera_x, camera_y)
         
         # Render event choice interface (on top of everything)
         if self.event_choice_interface:
-            self.event_choice_interface.render(self.screen)
+            with self.profiler.time_operation(ProfileCategory.RENDERING, "event_interface_render"):
+                self.event_choice_interface.render(self.screen)
+        
+        # Render performance overlay if enabled
+        self._render_performance_overlay()
         
         # Update display
         pygame.display.flip()
@@ -351,6 +414,9 @@ class GameEngine:
         # For actions that need targets, we'll use the selected station as both origin and target for now
         result = self.game_state.execute_action(action, station_name, station_name)
         
+        # Add audio and visual feedback
+        self._add_action_feedback(action, station_name, result)
+        
         # Show result message through message system
         if self.message_system:
             self.message_system.add_action_feedback(action, station_name, result)
@@ -366,6 +432,9 @@ class GameEngine:
         
         # Execute action through game state manager
         result = self.game_state.execute_action(action, station, station)
+        
+        # Add audio and visual feedback
+        self._add_action_feedback(action, station, result)
         
         # Show result message through message system
         if self.message_system:
@@ -493,6 +562,113 @@ class GameEngine:
             else:
                 self.logger.warning(f"Auto-save failed: {result['message']}")
     
+    def _optimize_performance(self):
+        """Perform automatic performance optimizations"""
+        if self.render_optimizer and self.current_frame % 60 == 0:  # Check every 60 frames
+            target_fps = self.settings_system.get_setting("graphics", "fps_limit") if self.settings_system else 30
+            self.render_optimizer.optimize_for_performance(target_fps)
+    
+    def _render_performance_overlay(self):
+        """Render performance information overlay"""
+        if not self.settings_system or not self.settings_system.get_setting("graphics", "show_fps"):
+            return
+        
+        # Get performance stats
+        fps = self.profiler.get_current_fps()
+        frame_stats = self.profiler.get_frame_time_stats()
+        
+        # Create performance text
+        font = pygame.font.SysFont('Arial', 14)
+        fps_text = f"FPS: {fps:.1f}"
+        frame_time_text = f"Frame: {frame_stats.get('current', 0):.1f}ms"
+        
+        # Render text
+        fps_surface = font.render(fps_text, True, (255, 255, 255))
+        frame_surface = font.render(frame_time_text, True, (255, 255, 255))
+        
+        # Position in top-right corner
+        fps_rect = fps_surface.get_rect()
+        fps_rect.topright = (self.screen.get_width() - 10, 10)
+        
+        frame_rect = frame_surface.get_rect()
+        frame_rect.topright = (self.screen.get_width() - 10, 30)
+        
+        # Draw background
+        pygame.draw.rect(self.screen, (0, 0, 0, 128), fps_rect.inflate(10, 5))
+        pygame.draw.rect(self.screen, (0, 0, 0, 128), frame_rect.inflate(10, 5))
+        
+        # Draw text
+        self.screen.blit(fps_surface, fps_rect)
+        self.screen.blit(frame_surface, frame_rect)
+    
+    def _toggle_performance_overlay(self):
+        """Toggle performance overlay display"""
+        if self.settings_system:
+            current = self.settings_system.get_setting("graphics", "show_fps")
+            self.settings_system.set_setting("graphics", "show_fps", not current)
+            
+            if self.message_system:
+                status = "enabled" if not current else "disabled"
+                self.message_system.add_message(
+                    f"Performance overlay {status}",
+                    MessageType.INFO,
+                    MessagePriority.NORMAL,
+                    duration=2.0
+                )
+    
+    def _log_performance_report(self):
+        """Log detailed performance report"""
+        self.profiler.log_performance_report()
+        
+        if self.message_system:
+            self.message_system.add_message(
+                "Performance report logged",
+                MessageType.INFO,
+                MessagePriority.NORMAL,
+                duration=2.0
+            )
+    
+    def _add_action_feedback(self, action: str, station_name: str, result: Dict[str, Any]):
+        """Add audio and visual feedback for actions"""
+        # Play action sound
+        if self.audio_system:
+            self.audio_system.play_action_sound(action)
+        
+        # Create visual effect
+        if self.visual_effects and self.map_view:
+            # Get station position for effects
+            station = self.game_state.metro_map.get_station(station_name) if self.game_state else None
+            if station:
+                x, y = station.position
+                self.visual_effects.create_action_effect(action, x, y)
+                
+                # Add success/failure feedback
+                if result.get("success", False):
+                    # Success effect
+                    if action in ["trade", "diplomacy"]:
+                        self.visual_effects.create_floating_text(x, y - 30, "Success!", (0, 255, 0))
+                else:
+                    # Failure effect
+                    self.visual_effects.create_floating_text(x, y - 30, "Failed", (255, 0, 0))
+    
+    def _add_turn_feedback(self):
+        """Add feedback for turn advancement"""
+        if self.audio_system:
+            self.audio_system.play_action_sound("turn_end")
+        
+        # Check for victory
+        if self.game_state and self.game_state.is_game_ended():
+            victory_status = self.game_state.get_victory_status()
+            if victory_status.get("victory_achieved"):
+                if self.audio_system:
+                    self.audio_system.play_action_sound("victory")
+                
+                if self.visual_effects:
+                    # Create victory effect at screen center
+                    center_x = self.config.SCREEN_WIDTH // 2
+                    center_y = self.config.SCREEN_HEIGHT // 2
+                    self.visual_effects.create_victory_effect(center_x, center_y)
+    
     def _end_turn(self):
         """End current turn and advance to next"""
         if not self.game_state:
@@ -516,6 +692,9 @@ class GameEngine:
         
         # Create auto-save if needed
         self._create_auto_save()
+        
+        # Add turn advancement feedback
+        self._add_turn_feedback()
         
     def _check_triggered_events(self):
         """Check for events that were triggered this turn and need player choices"""
@@ -616,4 +795,9 @@ class GameEngine:
     def shutdown(self):
         """Clean shutdown of the game engine"""
         self.running = False
+        
+        # Shutdown audio system
+        if self.audio_system:
+            self.audio_system.shutdown()
+        
         self.logger.info("Game engine shutdown requested")

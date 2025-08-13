@@ -1,1 +1,11 @@
-pygame>=2.5.0
+# Metro Universe Strategy Game - Dependencies
+
+# Core game engine
+pygame>=2.0.0
+
+# Optional: Enhanced audio effects and mathematical operations
+numpy>=1.19.0
+
+# Development dependencies (optional)
+# pytest>=6.0.0  # For running tests
+# pylint>=2.0.0  # For code quality checks
